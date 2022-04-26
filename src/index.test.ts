@@ -4,6 +4,51 @@ import test from 'ava';
 
 import { BitBuffer } from '.';
 
+test('alloc', t => {
+	const b = BitBuffer.alloc(1, 1);
+	t.is(b.length, 1);
+	t.is(b.readBit(0), 1);
+});
+
+test('from', t => {
+	const b = BitBuffer.from(BitBuffer.from(Buffer.from([ 42 ])));
+	t.is(b.length, 8);
+
+	t.throws(() => {
+		BitBuffer.from(1234 as any);
+	}, {
+		message: /1234/,
+	});
+});
+
+test('toString', t => {
+	const b = BitBuffer.alloc(1, 1);
+
+	t.throws(() => {
+		b.toString('hex' as any);
+	}, {
+		message: /encoding/,
+	});
+});
+
+test('keys', t => {
+	const b = BitBuffer.alloc(2);
+	t.deepEqual(Array.from(b.keys()), [ 0, 1 ]);
+});
+
+test('equals', t => {
+	const b1 = BitBuffer.alloc(2);
+	const b2 = BitBuffer.from('00', 'base2');
+	const b3 = BitBuffer.from('01', 'base2');
+	const b4 = BitBuffer.from('000', 'base2');
+	t.true(b1.equals(b2));
+	t.true(b2.equals(b1));
+	t.false(b1.equals(b3));
+	t.false(b3.equals(b1));
+	t.false(b1.equals(b4));
+	t.false(b4.equals(b1));
+});
+
 test('writeBit', t => {
 	const b = BitBuffer.alloc(16);
 	b.writeBit(1, 0);
@@ -16,6 +61,14 @@ test('writeBit', t => {
 	expectedBuffer.writeUInt16BE(0b1001_0001_1000_0001, 0);
 
 	t.deepEqual(b, BitBuffer.from(expectedBuffer));
+});
+
+test('writeUInt8', t => {
+	const actual = BitBuffer.alloc(16);
+	actual.writeUInt8(0xFF, 0);
+
+	const expected = BitBuffer.from(Buffer.from([ 0xFF, 0 ]));
+	t.true(actual.equals(expected));
 });
 
 test('writeUIntBE', t => {
